@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>무슨 일이 일어나고 있나요?</title>
+    <link rel="stylesheet" as="style" crossorigin
+        href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            user-select: none;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            height: 100%;
+        }
+
+        html,
+        body {
+            min-width: 1400px;
+            overflow-x: hidden;
+            background-color: #000000;
+            font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+            color: #ffffff;
+            height: 100%;
+            overflow-y: hidden;
+        }
+
+        body.scroll-unlocked {
+            overflow-y: auto;
+        }
+
+        .page-section {
+            position: relative;
+            width: calc(100% - 100px);
+            margin: 50px auto;
+            height: calc(100vh - 100px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+        }
+
+        /* ---------------------------------------------------- */
+        .fade-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #0041FF;
+            z-index: 9999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .fade-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .success-message {
+            font-size: 2.5rem;
+            font-weight: 300;
+            color: #ffffff;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.8s ease;
+            letter-spacing: -1px;
+        }
+
+        .fade-overlay.active .success-message {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ---------------------------------------------------- */
+        .opening {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+        }
+
+        .hero-section {
+            width: 100%;
+            height: 100vh;
+            margin: 0;
+            justify-content: flex-end;
+            padding-right: 10%;
+        }
+
+        .video-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        .video-background video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            pointer-events: none;
+        }
+
+        .main-content {
+            position: relative;
+            z-index: 2;
+            text-align: left;
+            width: 100%;
+            max-width: 580px;
+        }
+
+        .main-title {
+            font-size: 80px;
+            font-weight: 600;
+            margin-bottom: 30px;
+            line-height: 6.4rem;
+            color: #ffffff;
+            user-select: none;
+            white-space: nowrap;
+        }
+
+        .x-post-box {
+            background: rgba(21, 24, 28, 0.85);
+            border: 1px solid #2f3336;
+            border-radius: 16px;
+            padding: 16px;
+            display: flex;
+            gap: 12px;
+        }
+
+        .x-avatar {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+
+        .x-form-container {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .x-textarea {
+            width: 100%;
+            min-height: 100px;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #ffffff;
+            font-size: 1.25rem;
+            font-family: inherit;
+            resize: none;
+            padding-top: 4px;
+            line-height: 1.5;
+        }
+
+        .x-textarea::placeholder {
+            color: #71767b;
+        }
+
+        .x-bottom-bar {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #2f3336;
+        }
+
+        .x-post-btn {
+            background: #0041FF;
+            color: #ffffff;
+            border: none;
+            cursor: pointer;
+            padding: 8px 20px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            border-radius: 40px;
+            transition: background 0.2s ease;
+        }
+
+        .x-post-btn:hover {
+            background: #267fe6;
+        }
+
+        .global-click-text {
+            position: absolute;
+            z-index: 1;
+            color: #0041FF;
+            font-weight: 800;
+            white-space: nowrap;
+            pointer-events: none;
+            user-select: none;
+            text-shadow: 0 0 5px #0041FF;
+        }
+
+        .mid-section {
+            padding-right: 10%;
+            font-size: 1.5rem;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            justify-content: center;
+            align-items: flex-end;
+        }
+
+        .mid-text-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: flex-start;
+        }
+
+        .mid-section p {
+            color: #ffffff;
+        }
+
+        .mid-section p.small {
+            font-size: 1.1rem;
+            opacity: 0.8;
+        }
+
+        .lights-section {
+            width: 100%;
+            height: 100vh;
+            margin: 0;
+            background-color: #000000;
+            transition: background-color 0.4s ease;
+        }
+
+        .lights-section.light-on {
+            background-color: #ffffff;
+        }
+
+        .let there be lights {
+            font-size: 350px;
+            font-weight: 700;
+            line-height: 1.3;
+            text-align: left;
+            color: #000000;
+            user-select: none;
+            white-space: nowrap;
+        }
+
+        .lights-section.light-on .let.there.be.lights {
+            color: #000000;
+            font-size: 303px;
+            font-weight: 800;
+        }
+
+        .space {
+            width: 100%;
+            aspect-ratio: 2220 / 3000;
+            background-image: url('space.png');
+            background-size: cover;
+            background-position: center top;
+            background-repeat: no-repeat;
+            position: relative;
+        }
+
+        .earth {
+            position: relative;
+            left: 10%;
+            top: 65%;
+            width: 80%;
+            z-index: 10;
+        }
+
+        .earth img {
+            position: absolute;
+            z-index: 10;
+            width: 20%;
+            height: auto;
+            display: block;
+        }
+
+        .worldmap {
+            margin: 40px;
+            width: 100%;
+            aspect-ratio: 1525 / 1092;
+            background-image: url('world_map.png');
+            background-size: cover;
+            background-position: center top;
+            background-repeat: no-repeat;
+            position: relative;
+        }
+
+
+        /* ---------------------------------------------------- */
+        .bigbang-video-section {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+        }
+
+        .bigbang-video-container {
+            position: absolute;
+            z-index: 3;
+            top: 55%;
+            left: 20.5%;
+            width: 80%;
+        }
+
+        /* ---------------------------------------------------- */
+
+        .prosperity {
+            flex-shrink: 0;
+            margin-right: 50px;
+        }
+
+        .prosperity p1 {
+            display: block;
+            font-size: 84px;
+            font-weight: 700;
+            line-height: 1.2;
+            color: #ffffff;
+            z-index: 3;
+            white-space: nowrap;
+            padding-bottom: 35px;
+            padding-right: 26px;
+        }
+
+        .explanation {
+            display: flex;
+            gap: 45px;
+            max-width: 610px;
+            font-size: 15px;
+            line-height: 1.9;
+            color: #ffffff;
+            padding-bottom: 220px;
+            word-break: keep-all;
+        }
+
+        .explanation p {
+            flex: 1;
+            margin: 0;
+        }
+
+        .highlight-link {
+            color: #0062ff;
+            text-decoration: underline;
+            text-underline-offset: 4px;
+            font-weight: 500;
+            transition: opacity 0.2s ease;
+        }
+
+        .highlight-link:hover {
+            color: #6cbfff;
+        }
+
+        .timeline-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        .absolute-timeline {
+            position: absolute;
+            left: 20%;
+            top: 0;
+            width: 1.5px;
+            height: 100%;
+            background-color: #ffffff;
+            z-index: 2;
+            pointer-events: none;
+            margin-left: 0px
+        }
+
+        .map-marker {
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            background-color: #0062ff;
+            border-radius: 50%;
+            z-index: 4;
+            box-shadow: 0 0 10px rgb(31, 158, 255);
+        }
+    </style>
+</head>
+
+<body>
+    <section class="opening" id="openingContainer">
+        <div id="fadeOverlay" class="fade-overlay">
+            <div class="success-message">게시글 전송 완료!</div>
+        </div>
+        <section class="page-section hero-section">
+            <div id="videoBg" class="video-background">
+                <video autoplay muted loop playsinline>
+                    <source src="intro_bg.mp4" type="video/mp4">
+                </video>
+            </div>
+
+            <div class="main-content">
+                <h1 class="main-title">무슨 일이<br>일어나고 있나요?</h1>
+
+                <form id="trendForm" class="x-post-box">
+                    <img src="dog.png" alt="Profile" class="x-avatar">
+
+                    <div class="x-form-container">
+                        <textarea id="trendInput" class="x-textarea" placeholder="지금 당신에게 무슨 일이 일어나고 있나요?"
+                            autocomplete="off" spellcheck="false"></textarea>
+
+                        <div class="x-bottom-bar">
+                            <button type="submit" class="x-post-btn">게시하기</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </section>
+
+    <section id="secondSection" class="page-section">
+        <p style="opacity: 0.3;  font-size: 2.5rem;
+            font-weight: 300; color: #ffffff;">...</p>
+    </section>
+
+    <section class="page-section mid-section" style="padding-top:50vh; padding-bottom:60vh;">
+        <div class="mid-text-container">
+            <p style="font-size: 15px; font-weight: 300; letter-spacing: 3px; white-space: nowrap;">시간조차 존재하지 않은</p>
+            <p
+                style="font-size: 30px; font-weight: 300; line-height: 3rem; margin-top: -12px; white-space: nowrap; padding-right: 165px;">
+                무한한&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;간격이 흐르는
+                <br>광활한 우주에
+            </p>
+        </div>
+    </section>
+
+    <section class="page-section lights-section">
+        <div class="let there be lights">빛이<br>있으라!</div>
+    </section>
+    <div class="timeline-wrapper">
+        <div class="absolute-timeline"></div>
+        <img src="white_gradient.png"
+            style="width: 120%; position: absolute; z-index: 2; object-fit: cover;  top: -50px;">
+
+        <section class="page-section" style="height: auto;">
+
+            <div class="space">
+                <div class="earth">
+                    <img src="earth.png">
+                </div>
+                <p
+                    style="position: relative; left: 29%; top: 70%; font-size: 30px; font-weight: 300; line-height: 2.5rem; z-index: 3;">
+                    약
+                    138억년 전 발생한 ‘빅뱅' 은<br>은하계와 태양계, 그리고 지구를 존재하게 했습니다.</p>
+            </div>
+        </section>
+
+        <section class="page-section" style="height: auto;">
+            <div class="worldmap">
+                <div class="map-marker" style="left: 59%;top: 63%;"></div>
+                <p
+                    style="position: relative; left: 57%; top: 66%; font-size: 30px; font-weight: 500; line-height: 2.5rem; z-index: 3;">
+                    그로부터 137억 9970만 년 후,<br>최초의 인류가 출현합니다.</p>
+                <p
+                    style="position: relative; left: 57%; top: 64%; font-size: 17px; font-weight: 500; line-height: 1.5rem; z-index: 3;">
+                    ___________________<br>&nbsp;<br>호&nbsp;&nbsp;모&nbsp;&nbsp;
+                    &nbsp;사&nbsp;&nbsp;피&nbsp;&nbsp;엔&nbsp;&nbsp;스
+                </p>
+                <p
+                    style="position: relative; left: 57%; top: 64.5%; font-size: 15px; font-weight: 300; line-height: 1.5rem; z-index: 3;">
+                    현존인류의 원형. 동아프리카 지대에서 처음 등장했다.<br>지구 역사상 최초로 ‘문명'에 도달한 생명체이자
+                    <br>행성 전체의 지배종이 된다.
+                </p>
+                <img src="homo.png"
+                    style=" position: absolute; z-index: 10; width: 10%; height: auto; display: block; left: 60%; top: 40%;">
+            </div>
+        </section>
+
+        <section class="page-section bigbang-video-section">
+            <video class="bigbang-video-container" autoplay muted loop playsinline>
+                <source src="bigbang.mp4" type="video/mp4">
+            </video>
+        </section>
+
+        <section class="page-section"
+            style="height: auto; justify-content: center; align-items: center; padding-left: 300px;">
+            <div class="prosperity">
+                <p1>
+                    단<br>
+                    30만 년<br>
+                    만의 번영
+                </p1>
+            </div>
+            <div class="explanation">
+                <p>
+                    인류가 지구에 처음 출현하고 지금의 찬란한 번영을 누리기까지 불과 30만 년이 걸렸습니다.
+                    그리고 이 짧은 시간 동안 인류에게는 수많은 일들이 있었는데,
+                    한가지 흥미로운 점은<br> 인류의 문명이 늘 안정적인 상향곡선을 그리며 발전해 온 것은 아니라는 점입니다.
+                </p>
+                <p>
+                    찬란한 탑을 쌓아 올리다가도 한순간에 스스로 파멸을 선택하기도 했고, 비극 속에서 다시 눈부신 성취를 이뤄내기도 했습니다.
+                    <br>같은 해, 같은 날에도 상반된 얼굴을 하고 있던 인류!
+                    <a href="index2.html" class="highlight-link">추락과 동시에 도약하며 걸어온 그들의 길을 살펴봅시다.</a>
+                </p>
+            </div>
+        </section>
+
+    </div>
+    <script>
+        const form = document.getElementById('trendForm');
+        const input = document.getElementById('trendInput');
+        const fadeOverlay = document.getElementById('fadeOverlay');
+        const secondSection = document.getElementById('secondSection');
+        const videoBg = document.getElementById('videoBg');
+        const openingContainer = document.getElementById('openingContainer');
+
+        const translations = [
+            "What's happening?", "何가起きている의？", "怎么了？", "¿Qué está pasando?",
+            "Qu'est-ce qui se passe?", "Что происходит?", "Was ist los?", "O que está acontecendo?",
+            "Cosa sta succedening?", "किं Bhavati?", "Nên xảy라 chuyện gì?", "ماذا يحدث？",
+            "Co się dzieje?", "Neler oluyor?", "Vad händer?", "Hva skjer?",
+            "Što se događa?", "Apa yang sedang terjadi?", "Quid agitur?", "Mambo vipi?",
+            "Történik valami?", "क्या हो रहा है?", "무슨 일이 일어나고 있나요?"
+        ];
+
+        let lastX = 0;
+        let lastY = 0;
+        const minDistance = 150;
+
+        videoBg.addEventListener('mousemove', function (e) {
+            const currentX = e.clientX;
+            const currentY = e.clientY;
+            const distance = Math.sqrt(Math.pow(currentX - lastX, 2) + Math.pow(currentY - lastY, 2));
+
+            if (distance > minDistance) {
+                lastX = currentX;
+                lastY = currentY;
+
+                const randomIndex = Math.floor(Math.random() * translations.length);
+                const textEl = document.createElement('span');
+                textEl.className = 'global-click-text';
+                textEl.textContent = translations[randomIndex];
+
+                const randomSize = (Math.random() * 1.5 + 1.1).toFixed(1);
+                textEl.style.left = `${currentX}px`;
+                textEl.style.top = `${currentY}px`;
+                textEl.style.fontSize = `${randomSize}rem`;
+                textEl.style.transform = `translate(-50%, -50%)`;
+
+                openingContainer.appendChild(textEl);
+
+                setTimeout(() => { textEl.remove(); }, 3000);
+            }
+        });
+
+        input.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                form.requestSubmit();
+            }
+        });
+
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const value = input.value.trim();
+            if (!value) return;
+
+            localStorage.setItem('latestTrend', value);
+            input.value = '';
+
+            fadeOverlay.classList.add('active');
+
+            setTimeout(() => {
+                setTimeout(() => {
+                    document.body.classList.add('scroll-unlocked');
+                    secondSection.scrollIntoView({ behavior: 'smooth' });
+
+                    setTimeout(() => {
+                        fadeOverlay.classList.remove('active');
+                    }, 1000);
+                }, 1500);
+            }, 1000);
+        });
+
+        const lightsSection = document.querySelector('.lights-section');
+        if (lightsSection) {
+            const observerOptions = { root: null, threshold: 0.5 };
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        lightsSection.classList.add('light-on');
+                        observer.unobserve(lightsSection);
+                    }
+                });
+            }, observerOptions);
+            observer.observe(lightsSection);
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>그렇다면, 2026년은?</title>
+    <link rel="stylesheet" as="style" crossorigin
+        href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            overflow-x: hidden;
+            width: 100%;
+            background-color: #000000;
+            font-family: "Pretendard";
+            color: #ffffff;
+            scroll-snap-type: y mandatory;
+            scroll-behavior: smooth;
+            height: 100%;
+        }
+
+        h1 {
+            position: absolute;
+            font-size: 80px;
+        }
+
+        p {
+            font-family: "Pretendard";
+            color: #ffffff;
+            font-size: 20px;
+            line-height: 40px;
+            font-weight: 300;
+        }
+
+        /* ----------------------------------------------------
+            ★ [구조 대수술] 좌측 타임라인 네비게이션 바 ★
+        ---------------------------------------------------- */
+        .top-nav-container {
+            position: fixed;
+            top: 30px;
+            left: 100px;
+            width: calc(100% - 200px);
+            max-width: 1700px;
+            height: 36px;
+            border: 1px solid rgb(255, 255, 255);
+            border-radius: 50px;
+            z-index: 100;
+            display: block;
+            padding: 0 40px;
+            backdrop-filter: blur(3px);
+        }
+
+        .nav-bead {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background-color: #555555;
+            z-index: 2;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        .nav-bead[data-target="0"] {
+            left: 40px;
+            background-color: #ff9d00
+        }
+
+        .nav-bead[data-target="1"] {
+            left: 120px;
+            background-color: #eed600;
+        }
+
+        .nav-bead[data-target="2"] {
+            left: 240px;
+            background-color: #0062ff;
+        }
+
+        .nav-bead[data-target="3"] {
+            left: calc(100% - 140px);
+            background-color: #ff9100;
+        }
+
+        .nav-bead[data-target="4"] {
+            left: 40%;
+        }
+
+        .nav-bead[data-target="5"] {
+            left: 55%;
+        }
+
+        .nav-bead[data-target="6"] {
+            left: 70%;
+        }
+
+        .nav-bead[data-target="final"] {
+            left: calc(100% - 60px);
+            background-color: #ffffff;
+        }
+
+        .nav-bead.active {
+            transform: translateY(-50%) scale(1.35);
+            box-shadow: 0 0 15px currentColor;
+        }
+
+        .nav-bead[data-target="0"].active {
+            background-color: #ffaa00;
+            color: #ffaa00;
+        }
+
+        .nav-bead[data-target="1"].active {
+            background-color: #fff200;
+            color: #fff200;
+        }
+
+        .nav-bead[data-target="2"].active {
+            background-color: #0084ff;
+            color: #0084ff;
+            box-shadow: 0 0 15px #0062ff;
+        }
+
+        .nav-bead[data-target="3"].active {
+            background-color: #ff9100;
+            color: #ff9100;
+            box-shadow: 0 0 15px #ff9100;
+        }
+
+        .nav-bead[data-target="final"].active {
+            background-color: #ffffff;
+            color: #ffffff;
+        }
+
+        /* ----------------------------------------------------
+            ★ 기존 타임라인 및 레이아웃 스타일 ★
+        ---------------------------------------------------- */
+        .timeline-wrapper {
+            position: relative;
+            width: 100%;
+            z-index: 1;
+        }
+
+        .absolute-timeline {
+            position: absolute;
+            left: 20%;
+            top: 0px;
+            width: 1.5px;
+            height: 100%;
+            background-color: #ffffff;
+            z-index: 9;
+            pointer-events: none;
+        }
+
+        .trend-section {
+            position: relative;
+            width: 100%;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            padding: 60px 0 0 0;
+            gap: 40px;
+            background: #000;
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+        }
+
+        .footer_background {
+            background-color: #0062ff;
+            padding: 60px 100px;
+            position: relative;
+            z-index: 999;
+            scroll-snap-align: end;
+        }
+
+        .fixed-timeline-header {
+            position: fixed;
+            left: calc(20% - 195px);
+            top: calc(50vh - 400px);
+            display: flex;
+            align-items: flex-start;
+            gap: 50px;
+            height: 1.1em;
+            font-size: 120px;
+            font-weight: 800;
+            z-index: 11;
+            pointer-events: none;
+        }
+
+        @media (max-width: 1500px) {
+            .fixed-timeline-header {
+                left: 105px;
+            }
+        }
+
+        .mask-frame {
+            height: 1.1em;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .era-frame {
+            width: 170px;
+        }
+
+        .year-frame {
+            width: 400px;
+        }
+
+        .roller-track {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 300%;
+            transform: translateY(-33.333%);
+        }
+
+        .roller-track.animate {
+            transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        .scroll-text {
+            display: block;
+            font-size: 100%;
+            font-weight: 800;
+            color: #ffffff;
+            line-height: 1.1;
+            letter-spacing: -2px;
+            height: 33.333%;
+        }
+
+        .era-text {
+            text-align: right;
+        }
+
+        .year-text {
+            text-align: left;
+        }
+
+        .roller-track.move-up {
+            transform: translateY(-66.666%);
+        }
+
+        .roller-track.move-down {
+            transform: translateY(0%);
+        }
+
+        .page-section {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+            background-image: url('world_map.png');
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            background-position: center center;
+            background-size: calc(100% - 100px) auto;
+        }
+
+        @media (max-width: 1500px) {
+            .page-section {
+                background-size: 1400px auto;
+                background-position: top 50% left 50px;
+            }
+        }
+
+        .map-content-container {
+            position: relative;
+            width: calc(100% - 100px);
+            min-width: 1400px;
+            aspect-ratio: 1525 / 1092;
+            height: auto;
+        }
+
+        .map-marker {
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            background-color: #0062ff;
+            border-radius: 50%;
+            z-index: 12;
+            box-shadow: 0 0 10px rgb(31, 158, 255);
+            transform: translate(-50%, -50%);
+        }
+
+        .map-desc {
+            position: absolute;
+            z-index: 12;
+            color: #ffffff;
+            word-break: keep-all;
+        }
+
+        .year-2026-section {
+            z-index: 10;
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: #000;
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+        }
+
+        .year-2026 {
+            font-size: min(35vw, 670px);
+            font-weight: 300;
+            line-height: 1.1;
+            color: #ffffff;
+            text-align: center;
+        }
+
+        .year-2026-section p {
+            font-size: 24px;
+            font-weight: 300;
+            color: #ffffff;
+            text-align: center;
+        }
+
+        .trend-board {
+            width: 100%;
+            max-width: 600px;
+            max-height: 400px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            position: relative;
+            z-index: 3;
+        }
+
+        .trend-item {
+            padding: 14px 20px;
+            background: #ffffff;
+            border-radius: 4px 8px 8px 4px;
+            font-size: 16px;
+            color: #08090c;
+            animation: slideIn 0.4s ease-out;
+        }
+
+        .empty-msg {
+            color: #cbd5e1;
+            text-align: center;
+            font-style: italic;
+            padding: 40px 0;
+        }
+
+        .back-btn {
+            margin: 20px 0 60px 0;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: rgba(255, 255, 255, 0.6);
+            padding: 10px 24px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            z-index: 6;
+        }
+
+        .back-btn:hover {
+            border-color: #ffffff;
+            color: #ffffff;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ----------------------------------------------------*/
+        .trend-section {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            background: #000;
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+        }
+
+        .iphone-container {
+            position: relative;
+            width: 340px;
+            height: 680px;
+            background-image: url('iPhone.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            z-index: 5;
+        }
+
+        .iphone-container h1 {
+            width: max-content;
+            white-space: nowrap;
+            font-size: 64px;
+            line-height: 1.2;
+        }
+
+        .iphone-screen {
+            position: absolute;
+            top: 24px;
+            left: 22px;
+            width: 296px;
+            height: 632px;
+            border-radius: 40px;
+            overflow: hidden;
+            background-color: #ffffff;
+            padding: 25px 18px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .twitter-header {
+            font-size: 16px;
+            font-weight: 700;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #eff3f4;
+            margin-bottom: 16px;
+            color: #0f1419;
+        }
+
+        .tweet-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .profile-img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-image: url('dog.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            border: 1px solid #eff3f4;
+        }
+
+        .profile-info .user-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: #0f1419;
+        }
+
+        .profile-info .user-handle {
+            font-size: 12px;
+            color: #536471;
+        }
+
+        .trend-board {
+            width: 100%;
+            flex-grow: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background: transparent;
+            border: none;
+            padding: 0;
+        }
+
+        .trend-item {
+            font-size: 15px;
+            line-height: 1.5;
+            color: #0f1419;
+            white-space: pre-wrap;
+            word-break: break-all;
+            animation: slideIn 0.4s ease-out;
+        }
+
+        .empty-msg {
+            color: #536471;
+            font-size: 15px;
+            font-style: italic;
+            line-height: 1.4;
+            padding: 10px 0;
+        }
+
+        .tweet-footer {
+            margin-top: auto;
+            padding-top: 12px;
+            border-top: 1px solid #eff3f4;
+            font-size: 11px;
+            color: #536471;
+            letter-spacing: -0.2px;
+        }
+
+        /*----------------------------------------------------*/
+        .split-content-section {
+            width: 100%;
+            min-width: 1500px;
+            height: 100vh;
+            display: flex;
+            background: #000000;
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+            overflow: hidden;
+        }
+
+        .split-image-side {
+            width: 50%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .split-image-side .img-box {
+            width: 100%;
+            height: 50%;
+            overflow: hidden;
+        }
+
+        .split-image-side .img-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .split-text-side {
+            width: 50%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0 80px;
+            background-color: #000000;
+        }
+
+        .text-content {
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .text-content h2 {
+            font-size: 42px;
+            line-height: 1.5;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: -1px;
+            margin-bottom: 10px;
+        }
+
+        .text-content p {
+            font-size: 18px;
+            line-height: 1.8;
+            color: #cbd5e1;
+            font-weight: 300;
+        }
+
+        /* ---------------------------------------------------- */
+        .final {
+            line-height: 1.5;
+            text-align: center;
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: #000;
+            overflow: hidden;
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+        }
+
+        .final h1 {
+            position: relative;
+            font-size: min(5vw, 64px);
+            font-weight: 700;
+            line-height: 1.4;
+            color: #ffffff;
+            text-align: center;
+            z-index: 2;
+        }
+
+        .video-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        .video-background video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            pointer-events: none;
+        }
+
+        .footer_background {
+            width: 100%;
+            background-color: #0062ff;
+            padding: 60px 100px;
+            position: relative;
+            z-index: 999;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="top-nav-container">
+        <div class="nav-track-line"></div>
+        <div class="nav-bead active" data-target="0"></div>
+        <div class="nav-bead" data-target="1"></div>
+        <div class="nav-bead" data-target="2"></div>
+        <div class="nav-bead" data-target="3"></div>
+        <div class="nav-bead" data-target="final"></div>
+    </div>
+
+    <div id="fixedHeader" class="fixed-timeline-header">
+        <div class="mask-frame era-frame">
+            <div id="eraRoller" class="roller-track">
+                <span class="scroll-text era-text" id="eraUp">BC</span>
+                <span class="scroll-text era-text" id="eraCenter">BC</span>
+                <span class="scroll-text era-text" id="eraDown">BC</span>
+            </div>
+        </div>
+        <div class="mask-frame year-frame">
+            <div id="yearRoller" class="roller-track">
+                <span class="scroll-text year-text" id="yearUp">2000</span>
+                <span class="scroll-text year-text" id="yearCenter">2000</span>
+                <span class="scroll-text year-text" id="yearDown">2000</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="timeline-wrapper">
+        <div class="absolute-timeline"></div>
+
+        <section id="sec-0" class="page-section BC2500" data-idx="0" data-year="2000" data-era="BC">
+            <div class="map-content-container">
+                <div class="map-marker" style="left: 59%; top: 57%;"></div>
+                <div class="map-desc" style="left: 41%; top: 60%;">
+                    <p style="width: 100%;"><img src="pyramid.png" alt="pyramid"></p>
+                </div>
+                <div class="map-marker" style="left: 84%; top:51%;"></div>
+                <div class="map-desc" style="left: 79%; top: 33%;">
+                    <p style="width: 100%;"><img src="josun.png" alt="josun"></p>
+                </div>
+                <div class="map-marker" style="left: 72%; top:57%;"></div>
+                <div class="map-desc" style="left: 74%; top: 56%;">
+                    <p style="width: 100%;"><img src="india.png" alt="india"></p>
+                </div>
+            </div>
+        </section>
+
+        <section id="sec-1" class="page-section BC1200" data-idx="1" data-year="1200" data-era="BC">
+            <div class="map-content-container">
+                <div class="map-marker" style="left: 60%; top: 45%;"></div>
+                <div class="map-desc" style="left: 63%; top: 43%;">
+                    <p style="font-size: 15px; opacity: 0.8;">준비중...</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="sec-2" class="page-section BC44" data-idx="2" data-year="44" data-era="BC">
+            <div class="map-content-container">
+                <div class="map-marker" style="left: 60%; top: 45%;"></div>
+                <div class="map-desc" style="left: 63%; top: 43%;">
+                    <p style="font-size: 15px; opacity: 0.8;">준비중...</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="sec-3" class="page-section AD2025" data-idx="3" data-year="2025" data-era="AD">
+            <div class="map-content-container">
+                <div class="map-marker" style="left: 84%; top: 51%;"></div>
+                <div class="map-desc" style="left: 79%; top: 33%;">
+                    <p style="width: 100%;"><img src="impeachment.png" alt="impeachment"></p>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <section id="sec-final" class="year-2026-section">
+        <div class="year-2026">
+            2026
+        </div>
+        <p>2026년, 올해는 무슨 일이 일어났나요?</p>
+    </section>
+
+    <section id="trend-section1" class="trend-section">
+        <div class="iphone-container">
+            <div class="iphone-screen">
+                <div class="twitter-header">홈</div>
+                <div class="tweet-profile">
+                    <div class="profile-img"></div>
+                    <div class="profile-info">
+                        <div class="user-name">나</div>
+                        <div class="user-handle">@seoultech_student</div>
+                    </div>
+                </div>
+                <div id="trendBoard" class="trend-board">
+                    <div class="empty-msg">지금 당신에게 무슨 일이 일어나고 있나요?</div>
+                </div>
+                <div class="tweet-footer">방금 전 · Nowon-gu, Seoul, Republic of Korea</div>
+            </div>
+            <h1 style="left:-380px; top:340px; text-align: right;">2026년,</h1>
+            <h1 style="left:420px; top:340px; text-align: left;">당신의 하루<br>그 저편에는</h1>
+        </div>
+    </section>
+
+    <section class="split-content-section">
+        <div class="split-image-side">
+            <div class="img-box">
+                <img src="spaceship.png" alt="Spaceship">
+            </div>
+            <div class="img-box">
+                <img src="elonmusk.png" alt="Elon Musk">
+            </div>
+        </div>
+
+        <div class="split-text-side">
+            <div class="text-content">
+                <h2>인류의 지성이 도약하고,<br>문명의 정점으로 찬란하게 전진하는<br>위대한 세계가<br>존재함과 동시에...</h2>
+            </div>
+        </div>
+
+    </section>
+
+    <section class="split-content-section">
+        <div class="split-image-side">
+            <div class="img-box">
+                <img src="brazil.png" alt="Spaceship">
+            </div>
+            <div class="img-box">
+                <img src="iran.png" alt="Elon Musk">
+            </div>
+        </div>
+
+        <div class="split-text-side">
+            <div class="text-content">
+                <h2>폭력 속에 숨을 죽이고<br>기아와 재해로<br>무력하게 무너지는<br>비극적인 세계도 존재합니다.</h2>
+            </div>
+        </div>
+    </section>
+
+    <section class="final">
+        <h2>그러니 고개를 들어 주위를 둘러보세요!</h2>
+        <br><br>
+        <h2>나의 일상 바깥으로 시선을 확장할 때 비로소 세상은 조금 더 긴밀하게, <br>
+            그리고 <span class="highlight">다정하게 연결됩니다.</span>
+        </h2>
+    </section>
+
+    <section class="final">
+        <h1>지금,<br>
+            우리들이 사는 세상에서는<br>
+            무슨 일이<br>
+            일어나고 있나요?<br>
+        </h1>
+
+        <div id="videoBg" class="video-background">
+            <video autoplay muted loop playsinline>
+                <source src="intro_bg.mp4" type="video/mp4">
+            </video>
+        </div>
+    </section>
+
+    <section id="trend-section3" class="trend-section">
+        <button class="back-btn" onclick="location.href='index.html'">
+            ← 처음으로 돌아가기
+        </button>
+    </section>
+
+    <footer class='footer_background'>
+        <div class="contents-footer">
+            <h1 class="logo2" style="position: relative; top: 0; font-size: 64px; padding-bottom:20px; color: #ffffff">
+                🌏 무슨 일이 일어나고 있나요?</h1>
+            <p style="font-size:1rem; margin-top:40px; line-height: 1.7;">친애하는 지구촌 주민들에게<br>2026년 1학기
+                웹퍼블리싱<br>gain04728@seoultech.ac.kr<br>2026 © 이가인. 모든 권리 보유.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const board = document.getElementById('trendBoard');
+            const savedValue = localStorage.getItem('latestTrend');
+            if (savedValue) {
+                const emptyMsg = board.querySelector('.empty-msg');
+                if (emptyMsg) emptyMsg.remove();
+                const newItem = document.createElement('div');
+                newItem.className = 'trend-item';
+                newItem.textContent = savedValue;
+                board.appendChild(newItem);
+                localStorage.removeItem('latestTrend');
+            }
+
+            const fixedHeader = document.getElementById('fixedHeader');
+            const absoluteTimeline = document.querySelector('.absolute-timeline');
+            const eraRoller = document.getElementById('eraRoller');
+            const yearRoller = document.getElementById('yearRoller');
+
+            const eraUp = document.getElementById('eraUp'), eraCenter = document.getElementById('eraCenter'), eraDown = document.getElementById('eraDown');
+            const yearUp = document.getElementById('yearUp'), yearCenter = document.getElementById('yearCenter'), yearDown = document.getElementById('yearDown');
+
+            const sections = document.querySelectorAll('.page-section');
+            const finalSection = document.getElementById('sec-final');
+            const trendSection = document.getElementById('trend-section1');
+            const beads = document.querySelectorAll('.nav-bead');
+
+            let currentIndex = 0;
+            let isAnimating = false;
+
+            fixedHeader.style.transition = 'transform 0.6s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.4s ease, visibility 0.4s';
+            absoluteTimeline.style.transition = 'transform 0.6s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.4s ease, visibility 0.4s';
+
+            function updateActiveBead(targetAttr) {
+                beads.forEach(bead => {
+                    if (bead.getAttribute('data-target') === String(targetAttr)) {
+                        bead.classList.add('active');
+                    } else {
+                        bead.classList.remove('active');
+                    }
+                });
+            }
+
+            beads.forEach(bead => {
+                bead.addEventListener('click', function () {
+                    const target = this.getAttribute('data-target');
+                    const targetEl = target === 'final' ? finalSection : document.getElementById(`sec-${target}`);
+                    if (targetEl) {
+                        targetEl.scrollIntoView({ behavior: 'smooth' });
+                    }
+                });
+            });
+
+            const observerOptions = { root: null, threshold: 0.2 };
+
+            const timelineObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        if (entry.target.classList.contains('page-section')) {
+                            fixedHeader.style.visibility = 'visible';
+                            absoluteTimeline.style.visibility = 'visible';
+                            fixedHeader.style.opacity = '1';
+                            absoluteTimeline.style.opacity = '1';
+                            fixedHeader.style.transform = 'translateY(0)';
+                            absoluteTimeline.style.transform = 'translateY(0)';
+
+                            const nextIdx = parseInt(entry.target.getAttribute('data-idx'));
+                            const nextYear = entry.target.getAttribute('data-year');
+                            const nextEra = entry.target.getAttribute('data-era');
+                            const currentEra = eraCenter.textContent;
+
+                            updateActiveBead(nextIdx);
+
+                            if (nextIdx !== currentIndex && !isAnimating) {
+                                isAnimating = true;
+                                const isScrollingDown = nextIdx > currentIndex;
+
+                                if (isScrollingDown) {
+                                    yearDown.textContent = nextYear;
+                                    yearRoller.classList.add('animate', 'move-up');
+
+                                    if (nextEra !== currentEra) {
+                                        eraDown.textContent = nextEra;
+                                        eraRoller.classList.add('animate', 'move-up');
+                                    } else {
+                                        eraDown.textContent = currentEra;
+                                    }
+                                } else {
+                                    yearUp.textContent = nextYear;
+                                    yearRoller.classList.add('animate', 'move-down');
+
+                                    if (nextEra !== currentEra) {
+                                        eraUp.textContent = nextEra;
+                                        eraRoller.classList.add('animate', 'move-down');
+                                    } else {
+                                        eraUp.textContent = currentEra;
+                                    }
+                                }
+
+                                setTimeout(() => {
+                                    yearCenter.textContent = nextYear;
+                                    eraCenter.textContent = nextEra;
+                                    yearUp.textContent = nextYear; yearDown.textContent = nextYear;
+                                    eraUp.textContent = nextEra; eraDown.textContent = nextEra;
+
+                                    yearRoller.classList.remove('animate', 'move-up', 'move-down');
+                                    eraRoller.classList.remove('animate', 'move-up', 'move-down');
+
+                                    currentIndex = nextIdx;
+                                    isAnimating = false;
+                                }, 600);
+                            }
+                        }
+
+                        if (entry.target === finalSection) {
+                            updateActiveBead('final');
+                            currentIndex = 3;
+
+                            fixedHeader.style.transform = 'translateY(-100vh)';
+                            absoluteTimeline.style.transform = 'translateY(-100vh)';
+                            fixedHeader.style.opacity = '0';
+                            absoluteTimeline.style.opacity = '0';
+
+                            setTimeout(() => {
+                                if (fixedHeader.style.opacity === '0') {
+                                    fixedHeader.style.visibility = 'hidden';
+                                    absoluteTimeline.style.visibility = 'hidden';
+                                }
+                            }, 600);
+                        }
+
+                        if (entry.target === trendSection) {
+                            updateActiveBead('final');
+
+                            fixedHeader.style.transform = 'translateY(-100vh)';
+                            absoluteTimeline.style.transform = 'translateY(-100vh)';
+                            fixedHeader.style.opacity = '0';
+                            absoluteTimeline.style.opacity = '0';
+                            fixedHeader.style.visibility = 'hidden';
+                            absoluteTimeline.style.visibility = 'hidden';
+                        }
+                    }
+                });
+            }, observerOptions);
+
+            sections.forEach(section => timelineObserver.observe(section));
+            timelineObserver.observe(finalSection);
+            timelineObserver.observe(trendSection);
+
+            const finalVideoSection = document.querySelector('.final');
+            if (finalVideoSection) timelineObserver.observe(finalVideoSection);
+        });
+    </script>
+</body>
+
+</html>
